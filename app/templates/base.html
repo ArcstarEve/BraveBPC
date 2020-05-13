@@ -1,0 +1,37 @@
+<html>
+    <head>
+      {% if title %}
+      <title>{{ title }} - BPC Status</title>
+      {% else %}
+      <title>Welcome to BPC Status</title>
+      {% endif %}
+    </head>
+    <body>
+        <div>
+            BPC Status:
+            <a href="{{ url_for('index') }}">Home</a>
+            {% if is_brave_collective %}
+            <a href="{{ url_for('requests') }}">Requests</a>
+            {% endif %}
+            {% if is_brave_industries %}
+            <a href="{{ url_for('requests') }}">Work To Do</a>
+            {% endif %}
+            {% if current_user.is_anonymous %}
+            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://127.0.0.1:5000/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData">Login</a>
+            {% else %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+            {% endif %}
+        </div>
+        <hr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </body>
+</html>

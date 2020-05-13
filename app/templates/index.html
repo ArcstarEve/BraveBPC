@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 5px;
+      text-align: left;
+    }
+    </style>
+    {% if current_user.is_anonymous %}
+    <h1>Please log in!</h1>
+    {% else %}
+    <h1>Hi, {{ current_user.username }}!</h1>
+    {% endif %}
+
+    {% if is_brave_collective %}
+    <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.</p></div>
+
+    <div>
+        {% if allow_request %}
+        <form action="/submit" method="post">
+            {{ form.hidden_tag() }}
+            <table>
+                <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th><th>Wanted</th></tr>
+                {% for bpc in bpcs %}
+                <tr>
+                    <td rowspan="{{ bpcs[bpc]['variants'] }}">{{ bpc }}</td>
+                    {% for mes in bpcs[bpc] %}
+                    {% if mes == 'variants' %}
+                    {% else %}
+                    <td rowspan="{{ bpcs[bpc][mes]['variants'] }}">{{ mes }}</td>
+                    {% for tes in bpcs[bpc][mes] %}
+                    {% if tes == 'variants' %}
+                    {% else %}
+                    <td rowspan="{{ bpcs[bpc][mes][tes]['variants'] }}">{{ tes }}</td>
+                    {% for runs in bpcs[bpc][mes][tes] %}
+                    {% if runs == 'variants' %}
+                    {% else %}
+                    <td>{{ runs }}</td>
+                    <td>{{ bpcs[bpc][mes][tes][runs] }}</td>
+                    <td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>
+                    </tr><tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            <p>{{ form.submit() }}</p>
+        </form>
+        {% else %}
+        <p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>
+        {% endif %}
+    </div>
+
+    {% else %}
+
+    <div><p>This service is only available to members of Brave Collective.  If you would like to make a request from this service, please log in with a character that is a member of the Brave Collective.</p></div>
+
+    {% endif %}
+{% endblock %}
