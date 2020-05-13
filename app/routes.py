@@ -162,6 +162,64 @@ def requests():
                            is_brave_collective=is_brave_collective)
 
 
+@app.route('/todo', methods=['GET'])
+def todo():
+    if current_user.is_anonymous:
+        return redirect(url_for('index'))
+    data = {}
+    form = CompleteForm()
+    bpo_data = OrderedDict()
+    is_brave_collective = False
+    is_brave_industries = False
+
+    if current_user.is_authenticated:
+        is_brave_industries = False
+        api = swagger_client.CharacterApi()
+        api.api_client.set_default_header('User-Agent', 'brave-bpc')
+        api.api_client.host = "https://esi.tech.ccp.is"
+
+        response = api.get_characters_character_id(current_user.user_id)
+
+        if response.alliance_id == 99003214:
+            is_brave_collective = True
+        if response.corporation_id == 98445423:
+            is_brave_industries = True
+
+        if not is_brave_industries:
+            return redirect(url_for('index'))
+
+    with open('bps2.json') as json_file:
+        raw_data = json.load(json_file)
+
+    bpo_names = sorted(raw_data['bpos'])
+    for name in bpo_names:
+        bpo_data[name] = raw_data['bpos'][name]
+
+    needed_copies = {}
+
+    for name in bpo_names:
+        max_runs = 0
+        qty = 0
+        if name in raw_data['bpcs'] and "10" in raw_data['bpcs'][name] and "20" in raw_data['bpcs'][name]['10']:
+            for entry in raw_data['bpcs'][name]['10']['20']:
+                if entry == 'variants':
+                    continue
+                runs = int(entry)
+                if runs > max_runs:
+                    max_runs = runs
+                    qty = raw_data['bpcs'][name]['10']['20'][entry]
+        if qty < 5:
+            needed_copies[name] = qty
+
+    return render_template('todo.html',
+                           form=form,
+                           title='Requests',
+                           requests=data,
+                           needed=needed_copies,
+                           is_brave_industries=is_brave_industries,
+                           is_brave_collective=is_brave_collective)
+
+
 @app.route('/callback')
 def callback():
     code = request.args.get('code')

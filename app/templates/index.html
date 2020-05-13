@@ -10,6 +10,10 @@
       padding: 5px;
       text-align: left;
     }
+    .container {
+      display: flex;
+      justify-content: center;
+    }
     </style>
     {% if current_user.is_anonymous %}
     <h1>Please log in!</h1>
@@ -20,7 +24,7 @@
     {% if is_brave_collective %}
     <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.</p></div>
 
-    <div>
+    <div class="container">
         {% if allow_request %}
         <form action="/submit" method="post">
             {{ form.hidden_tag() }}

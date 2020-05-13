@@ -14,10 +14,10 @@
             <a href="{{ url_for('requests') }}">Requests</a>
             {% endif %}
             {% if is_brave_industries %}
-            <a href="{{ url_for('requests') }}">Work To Do</a>
+            <a href="{{ url_for('todo') }}">Work To Do</a>
             {% endif %}
             {% if current_user.is_anonymous %}
-            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://127.0.0.1:5000/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData">Login</a>
+            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://127.0.0.1:5000/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData esi-characters.read_blueprints.v1 esi-corporations.read_blueprints.v1 esi-industry.read_corporation_jobs.v1">Login</a>
             {% else %}
             <a href="{{ url_for('logout') }}">Logout</a>
             {% endif %}
