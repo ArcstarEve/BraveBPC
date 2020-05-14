@@ -1,4 +1,4 @@
-from app import app, db
+from app import app, db, esi
 from app.forms import LoginForm, RequestForm, CompleteForm
 from app.models import User, Request
 from collections import OrderedDict
@@ -17,7 +17,6 @@ def index():
     is_brave_collective = False
     is_brave_industries = False
     allow_request = False
-    data = []
     bpc_data = OrderedDict()
     form = RequestForm()
 
@@ -29,7 +28,7 @@ def index():
 
         response = api.get_characters_character_id(current_user.user_id)
 
-        print(response)
+        # print(response)
 
         if response.alliance_id == 99003214:
             is_brave_collective = True
@@ -41,12 +40,14 @@ def index():
             allow_request = True
         # Check if the user has an outstanding request
 
-        # with open('bps2.json') as json_file:
-        #     raw_data = json.load(json_file)
+        esi.update_bp_data()
 
-        # bpc_names = sorted(raw_data['bpcs'])
-        # for name in bpc_names:
-        #     bpc_data[name] = raw_data['bpcs'][name]
+        with open('bps2.json') as json_file:
+            raw_data = json.load(json_file)
+
+        bpc_names = sorted(raw_data['bpcs'])
+        for name in bpc_names:
+            bpc_data[name] = raw_data['bpcs'][name]
 
         # print(bpc_data)
 
@@ -188,8 +189,14 @@ def todo():
         if not is_brave_industries:
             return redirect(url_for('index'))
 
+    esi.update_bp_data()
+    esi.update_job_data()
+
     with open('bps2.json') as json_file:
         raw_data = json.load(json_file)
+
+    with open('jobs.json') as json_file:
+        job_data = json.load(json_file)
 
     bpo_names = sorted(raw_data['bpos'])
     for name in bpo_names:
@@ -209,11 +216,18 @@ def todo():
                     max_runs = runs
                     qty = raw_data['bpcs'][name]['10']['20'][entry]
         if qty < 5:
-            needed_copies[name] = qty
+            needed_copies[name] = [qty, False, False]
+    
+    for job in job_data:
+        if job["name"] in needed_copies:
+            if job["activity_id"] == 3 or job["activity_id"] == 4:
+                needed_copies[job["name"]][2] = True
+            if job["activity_id"] == 5:
+                needed_copies[job["name"]][1] = True
 
     return render_template('todo.html',
                            form=form,
-                           title='Requests',
+                           title='Work To Do',
                            requests=data,
                            needed=needed_copies,
                            is_brave_industries=is_brave_industries,

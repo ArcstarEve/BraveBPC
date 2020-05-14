@@ -24,9 +24,24 @@
             {% for item in needed %}
             <tr>
                 <td>{{ item }}</td>
-                <td>{{ needed[item] }}</td>
+                {% if needed[item][0] == 0 %}
+                <td bgcolor="#FF3333">{{ needed[item][0] }}</td>
+                {% elif needed[item][0] <= 2 %}
+                <td bgcolor="#FF9933">{{ needed[item][0] }}</td>
+                {% else %}
+                <td bgcolor="#FFFF33">{{ needed[item][0] }}</td>
+                {% endif %}
+
+                {% if needed[item][1] %}
+                <td bgcolor="lime">Yes</td>
+                {% else %}
                 <td>No</td>
+                {% endif %}
+                {% if needed[item][2] %}
+                <td bgcolor="lime">Yes</td>
+                {% else %}
                 <td>No</td>
+                {% endif %}
             </tr>
             {% endfor %}
         </table>
