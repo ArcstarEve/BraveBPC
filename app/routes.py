@@ -42,7 +42,7 @@ def index():
 
         esi.update_bp_data()
 
-        with open('bps2.json') as json_file:
+        with open('/tmp/bps2.json') as json_file:
             raw_data = json.load(json_file)
 
         bpc_names = sorted(raw_data['bpcs'])
@@ -192,10 +192,10 @@ def todo():
     esi.update_bp_data()
     esi.update_job_data()
 
-    with open('bps2.json') as json_file:
+    with open('/tmp/bps2.json') as json_file:
         raw_data = json.load(json_file)
 
-    with open('jobs.json') as json_file:
+    with open('/tmp/jobs.json') as json_file:
         job_data = json.load(json_file)
 
     bpo_names = sorted(raw_data['bpos'])
@@ -244,7 +244,10 @@ def callback():
     headers = {'Content-Type': 'application/json',
                'Authorization': 'Basic ' + app.config['AUTH_KEY']}
 
+    print(headers)
+
     r = req.post(url, data=data, headers=headers)
+    print(r)
     raw = r.json()
 
     access_token = raw['access_token']
@@ -268,7 +271,8 @@ def callback():
     
     login_user(user, remember=True)
 
-    return render_template('view.html', raw=raw, access_token=access_token, refresh_token=refresh_token)
+    return redirect(url_for('index'))
+    # return render_template('view.html', raw=raw, access_token=access_token, refresh_token=refresh_token)
 
 
 @app.route('/complete', methods=['GET', 'POST'])

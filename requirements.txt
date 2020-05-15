@@ -5,3 +5,5 @@ flask-sqlalchemy
 flask-wtf
 python-dotenv
 requests
+google-cloud-storage
+google-cloud-secret-manager
