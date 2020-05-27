@@ -1,14 +1,17 @@
-from app import db, login
+from app import db, login, client
 from datetime import datetime
 from flask_login import UserMixin
 
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(128), index=True, unique=True)
-    user_id = db.Column(db.Integer, unique=True)
-    refresh_token = db.Column(db.String(128))
-    requests = db.relationship('Request', backref='requester', lazy='dynamic')
+class User(UserMixin):
+    username = ""
+    id = 0
+    refresh_token = ""
+
+    def __init__(self, user, user_id, token):
+        self.username = user
+        self.id = user_id
+        self.refresh_token = token
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -28,4 +31,14 @@ class Request(db.Model):
 
 @login.user_loader
 def load_user(id):
-    return User.query.get(id)
+    print(id)
+    query = client.query(kind='User')
+    entities = list(query.fetch())
+    # entity = list(query.add_filter('user_id', '=', id).fetch(1))
+    for entity in entities:
+        print(entity)
+        print(entity['user_id'])
+        if str(entity['user_id']) == str(id):
+            return User(entity['username'], entity['user_id'], entity['refresh_token'])
+    return User(entity['username'], entity['user_id'], entity['refresh_token'])
+    # return client.get(key)

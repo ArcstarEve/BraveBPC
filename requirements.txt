@@ -8,3 +8,4 @@ requests
 google-cloud-storage
 google-cloud-secret-manager
 mysqlclient
+google-cloud-datastore

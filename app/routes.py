@@ -1,4 +1,4 @@
-from app import app, db, esi
+from app import app, db, client, esi
 from app.forms import LoginForm, RequestForm, CompleteForm
 from app.models import User, Request
 from collections import OrderedDict
@@ -8,6 +8,7 @@ import datetime
 import json
 import requests as req
 import swagger_client
+from google.cloud import datastore
 from swagger_client.rest import ApiException
 
 
@@ -26,7 +27,7 @@ def index():
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
         api.api_client.host = "https://esi.tech.ccp.is"
 
-        response = api.get_characters_character_id(current_user.user_id)
+        response = api.get_characters_character_id(current_user.id)
 
         # print(response)
 
@@ -35,10 +36,11 @@ def index():
         if response.corporation_id == 98445423:
             is_brave_industries = True
 
-        reqs = Request.query.filter_by(complete_time=None, char_id=current_user.user_id).first()
-        if reqs is None:
-            allow_request = True
         # Check if the user has an outstanding request
+        # This doesn't currently work so 'allow_request' will always be False.
+        # reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id).first()
+        # if reqs is None:
+        #     allow_request = True
 
         esi.update_bp_data()
 
@@ -82,7 +84,7 @@ def submit():
         return redirect(url_for('index'))
     requested = 0
     print("User '{0}' ({1}) is requesting the following:".format(current_user.username,
-                                                                 current_user.user_id))
+                                                                 current_user.id))
     output = ''
     for item in request.values:
         if item == "csrf_token":
@@ -101,7 +103,7 @@ def submit():
 
     new_request = Request(request=output,
                           create_time=datetime.datetime.utcnow(),
-                          char_id=current_user.user_id,
+                          char_id=current_user.id,
                           complete_time=None,
                           completed_by=None)
 
@@ -124,7 +126,7 @@ def requests():
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
         api.api_client.host = "https://esi.tech.ccp.is"
 
-        response = api.get_characters_character_id(current_user.user_id)
+        response = api.get_characters_character_id(current_user.id)
 
         if response.alliance_id == 99003214:
             is_brave_collective = True
@@ -135,7 +137,7 @@ def requests():
         if is_brave_industries:
             reqs = Request.query.filter_by(complete_time=None)
         elif is_brave_collective:
-            reqs = Request.query.filter_by(complete_time=None, char_id=current_user.user_id)
+            reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id)
 
         for entry in reqs:
             data[entry.id] = []
@@ -179,7 +181,7 @@ def todo():
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
         api.api_client.host = "https://esi.tech.ccp.is"
 
-        response = api.get_characters_character_id(current_user.user_id)
+        response = api.get_characters_character_id(current_user.id)
 
         if response.alliance_id == 99003214:
             is_brave_collective = True
@@ -191,6 +193,15 @@ def todo():
 
     esi.update_bp_data()
     esi.update_job_data()
+
+    ignore = ['Civilian Data Analyzer Blueprint']
+    adjust = ['Apostle Blueprint',
+              'Chimera Blueprint',
+              'Ion Siege Blaster I Blueprint',
+              'Pharolux Cyno Beacon Blueprint',
+              'Standup M-Set Biochemical Reactor Time Efficiency I Blueprint',
+              'Tenebrex Cyno Jammer Blueprint',
+              'Triple Neutron Blaster Cannon I Blueprint']
 
     with open('/tmp/bps2.json') as json_file:
         raw_data = json.load(json_file)
@@ -205,16 +216,36 @@ def todo():
     needed_copies = {}
 
     for name in bpo_names:
+        if name in ignore:
+            continue
+
+        desired_me = '10'
+        desired_te = '20'
+
+        if name in adjust:
+            desired_me = '0'
+            desired_te = '0'
+            for me in raw_data['bpos'][name]:
+                if me == 'variants':
+                    continue
+                if int(me) > int(desired_me):
+                    desired_me = me
+            for te in raw_data['bpos'][name][desired_me]:
+                if te == 'variants':
+                    continue
+                if int(te) > int(desired_te):
+                    desired_te = te
+
         max_runs = 0
         qty = 0
-        if name in raw_data['bpcs'] and "10" in raw_data['bpcs'][name] and "20" in raw_data['bpcs'][name]['10']:
-            for entry in raw_data['bpcs'][name]['10']['20']:
+        if name in raw_data['bpcs'] and desired_me in raw_data['bpcs'][name] and desired_te in raw_data['bpcs'][name][desired_me]:
+            for entry in raw_data['bpcs'][name][desired_me][desired_te]:
                 if entry == 'variants':
                     continue
                 runs = int(entry)
                 if runs > max_runs:
                     max_runs = runs
-                    qty = raw_data['bpcs'][name]['10']['20'][entry]
+                    qty = raw_data['bpcs'][name][desired_me][desired_te][entry]
         if qty < 5:
             needed_copies[name] = [qty, False, False]
     
@@ -244,10 +275,7 @@ def callback():
     headers = {'Content-Type': 'application/json',
                'Authorization': 'Basic ' + app.config['AUTH_KEY']}
 
-    print(headers)
-
     r = req.post(url, data=data, headers=headers)
-    print(r)
     raw = r.json()
 
     access_token = raw['access_token']
@@ -263,11 +291,17 @@ def callback():
     username = raw['CharacterName']
     char_id = raw['CharacterID']
     
-    user = User.query.filter_by(username=username).first()
-    if user is None:
-        user = User(username=username, user_id=char_id, refresh_token=refresh_token)
-        db.session.add(user)
-        db.session.commit()
+    # user = User.query.filter_by(username=username).first()
+    query = client.query(kind='User')
+    result = list(query.add_filter('username', '=', username).fetch(1))
+    print(result)
+    user = User(user=username, user_id=char_id, token=refresh_token)
+    if len(result) == 0:
+        entry = datastore.Entity(client.key('User'))
+        entry.update({'username': username,
+                      'user_id': char_id,
+                      'refresh_token': refresh_token})
+        client.put(entry)
     
     login_user(user, remember=True)
 
@@ -281,7 +315,7 @@ def complete():
         return redirect(url_for('index'))
 
     print("User '{0}' ({1}) is completing the following requests:".format(current_user.username,
-                                                                          current_user.user_id))
+                                                                          current_user.id))
     output = ""
     for item in request.values:
         if item == "csrf_token":
@@ -294,7 +328,7 @@ def complete():
             order = Request.query.filter_by(id=item).first()
             print(order)
             order.complete_time = datetime.datetime.utcnow()
-            order.completed_by = current_user.user_id
+            order.completed_by = current_user.id
             db.session.commit()
 
     return redirect(url_for('requests'))
