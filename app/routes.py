@@ -1,6 +1,6 @@
-from app import app, db, client, esi
+from app import app, client, esi
 from app.forms import LoginForm, RequestForm, CompleteForm
-from app.models import User, Request
+from app.models import User
 from collections import OrderedDict
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user
@@ -17,7 +17,7 @@ from swagger_client.rest import ApiException
 def index():
     is_brave_collective = False
     is_brave_industries = False
-    allow_request = False
+    allow_request = True
     bpc_data = OrderedDict()
     form = RequestForm()
 
@@ -44,7 +44,7 @@ def index():
 
         esi.update_bp_data()
 
-        with open('/tmp/bps2.json') as json_file:
+        with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
             raw_data = json.load(json_file)
 
         bpc_names = sorted(raw_data['bpcs'])
@@ -58,6 +58,53 @@ def index():
                            title='Home',
                            bpcs=bpc_data,
                            allow_request=allow_request,
+                           is_brave_industries=is_brave_industries,
+                           is_brave_collective=is_brave_collective)
+
+
+@app.route('/sales')
+def sales():
+    is_brave_collective = False
+    is_brave_industries = False
+    bpo_data = OrderedDict()
+
+    # print(current_user.is_authenticated)
+    if current_user.is_authenticated:
+        api = swagger_client.CharacterApi()
+        api.api_client.set_default_header('User-Agent', 'brave-bpc')
+        api.api_client.host = "https://esi.tech.ccp.is"
+
+        response = api.get_characters_character_id(current_user.id)
+
+        # print(response)
+
+        if response.alliance_id == 99003214:
+            is_brave_collective = True
+        if response.corporation_id == 98445423:
+            is_brave_industries = True
+
+        esi.update_bp_data()
+
+        with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
+            raw_data = json.load(json_file)
+
+        bpo_names = sorted(raw_data['bpos'])
+        for name in bpo_names:
+            bpos = raw_data['bpos'][name]
+            qty = 0
+            for mes in bpos:
+                if mes == 'variants':
+                    continue
+                for tes in bpos[mes]:
+                    if tes == 'variants':
+                        continue
+                    qty += bpos[mes][tes]
+            if qty > 2:
+                bpo_data[name] = qty - 2
+
+    return render_template('sales.html',
+                           title='Sales',
+                           extra_bpos=bpo_data,
                            is_brave_industries=is_brave_industries,
                            is_brave_collective=is_brave_collective)
 
@@ -101,14 +148,14 @@ def submit():
     if requested > 10:
         return redirect(url_for('index'))
 
-    new_request = Request(request=output,
-                          create_time=datetime.datetime.utcnow(),
-                          char_id=current_user.id,
-                          complete_time=None,
-                          completed_by=None)
-
-    db.session.add(new_request)
-    db.session.commit()
+    # new_request = Request(request=output,
+    #                       create_time=datetime.datetime.utcnow(),
+    #                       char_id=current_user.id,
+    #                       complete_time=None,
+    #                       completed_by=None)
+    #
+    # db.session.add(new_request)
+    # db.session.commit()
 
     return redirect(url_for('requests'))
 
@@ -135,9 +182,11 @@ def requests():
 
         reqs = {}
         if is_brave_industries:
-            reqs = Request.query.filter_by(complete_time=None)
+            pass
+            # reqs = Request.query.filter_by(complete_time=None)
         elif is_brave_collective:
-            reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id)
+            pass
+            # reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id)
 
         for entry in reqs:
             data[entry.id] = []
@@ -203,10 +252,10 @@ def todo():
               'Tenebrex Cyno Jammer Blueprint',
               'Triple Neutron Blaster Cannon I Blueprint']
 
-    with open('/tmp/bps2.json') as json_file:
+    with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
         raw_data = json.load(json_file)
 
-    with open('/tmp/jobs.json') as json_file:
+    with open('{0}jobs.json'.format(app.config['ROOT_PATH'])) as json_file:
         job_data = json.load(json_file)
 
     bpo_names = sorted(raw_data['bpos'])
@@ -257,9 +306,7 @@ def todo():
                 needed_copies[job["name"]][1] = True
 
     return render_template('todo.html',
-                           form=form,
                            title='Work To Do',
-                           requests=data,
                            needed=needed_copies,
                            is_brave_industries=is_brave_industries,
                            is_brave_collective=is_brave_collective)
@@ -273,7 +320,7 @@ def callback():
                "code": code}
     data = json.dumps(payload)
     headers = {'Content-Type': 'application/json',
-               'Authorization': 'Basic ' + app.config['AUTH_KEY']}
+               'Authorization': 'Basic ' + app.config['DEV_AUTH_KEY']}
 
     r = req.post(url, data=data, headers=headers)
     raw = r.json()
@@ -325,10 +372,10 @@ def complete():
         if request.values[item]:
             print("  {0}: {1}".format(item, request.values[item]))
             output = '{0}{1}_{2}\n'.format(output, item, request.values[item])
-            order = Request.query.filter_by(id=item).first()
-            print(order)
-            order.complete_time = datetime.datetime.utcnow()
-            order.completed_by = current_user.id
-            db.session.commit()
+            # order = Request.query.filter_by(id=item).first()
+            # print(order)
+            # order.complete_time = datetime.datetime.utcnow()
+            # order.completed_by = current_user.id
+            # db.session.commit()
 
     return redirect(url_for('requests'))

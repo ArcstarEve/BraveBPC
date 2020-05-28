@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from app import app
 import json
 import os
 import requests
@@ -8,7 +9,7 @@ BRAVE_INDUSTRIES = 98445423
 
 def update_bp_data():
     try:
-        with open('/tmp/bps2.json') as json_file:
+        with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
             existing_data = json.load(json_file)
 
         last_time = datetime.strptime(existing_data['last_updated'], "%Y-%m-%d %H:%M:%S.%f")
@@ -76,7 +77,7 @@ def update_bp_data():
         else:
             stock[name] = {me_te_run: 1}
 
-    with open('/tmp/bps.json', 'w') as outfile:
+    with open('{0}bps.json'.format(app.config['ROOT_PATH']), 'w') as outfile:
         json.dump(bp_data, outfile, indent=4)
 
     data = {'last_updated': str(datetime.now()),
@@ -130,7 +131,7 @@ def update_bp_data():
                                             te: {'variants': 1,
                                                     runs: stock[item][entry]}}}
 
-    with open('/tmp/bps2.json', 'w') as outfile:
+    with open('{0}bps2.json'.format(app.config['ROOT_PATH']), 'w') as outfile:
         json.dump(data, outfile, indent=4)
 
 def update_job_data():
@@ -170,5 +171,5 @@ def update_job_data():
     for job in job_data:
         job["name"] = names[job["blueprint_type_id"]]
 
-    with open('/tmp/jobs.json', 'w') as outfile:
+    with open('{0}jobs.json'.format(app.config['ROOT_PATH']), 'w') as outfile:
         json.dump(job_data, outfile, indent=4)

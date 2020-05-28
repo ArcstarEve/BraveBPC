@@ -9,17 +9,20 @@
     <body>
         <div>
             BPC Status:
-            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('index') }}">Home</a>&ensp;
             {% if is_brave_collective %}
-            <a href="{{ url_for('requests') }}">Requests</a>
+            <a href="{{ url_for('requests') }}">Requests</a>&ensp;
             {% endif %}
             {% if is_brave_industries %}
-            <a href="{{ url_for('todo') }}">Work To Do</a>
+            <a href="{{ url_for('todo') }}">Work To Do</a>&ensp;
+            {% endif %}
+            {% if is_brave_industries %}
+            <a href="{{ url_for('sales') }}">For Sale</a>&ensp;
             {% endif %}
             {% if current_user.is_anonymous %}
-            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://bravebpc.appspot.com/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData">Login</a>
+            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://bravebpc.appspot.com/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData">Login</a>&ensp;
             {% else %}
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('logout') }}">Logout</a>&ensp;
             {% endif %}
         </div>
         <hr>
