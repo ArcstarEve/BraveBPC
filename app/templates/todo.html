@@ -16,14 +16,18 @@
     }
     </style>
 
-    <div><p>The following items need work.  If you have available Science slots, please consider starting a job for something below.</p></div>
+    <div><p>The following items need work.  If you have available Science slots, please consider starting a job for something below.  Anything with a name in yellow probably needs research before being copied.</p></div>
 
     <div class="container">
         <table>
             <tr><th>Name</th><th>Quantity</th><th>In Copy</th><th>In Research</th></tr>
             {% for item in needed %}
             <tr>
+                {% if needed[item][3] %}
+                <td bgcolor="#FFFF33">{{ item }}</td>
+                {% else %}
                 <td>{{ item }}</td>
+                {% endif %}
                 {% if needed[item][0] == 0 %}
                 <td bgcolor="#FF3333">{{ needed[item][0] }}</td>
                 {% elif needed[item][0] <= 2 %}

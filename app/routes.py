@@ -296,7 +296,12 @@ def todo():
                     max_runs = runs
                     qty = raw_data['bpcs'][name][desired_me][desired_te][entry]
         if qty < 5:
-            needed_copies[name] = [qty, False, False]
+            # needed_copy = [Quantity, Copy Job Running, Research Job Running, BPO Needs Research]
+            needed_copies[name] = [qty, False, False, True]
+
+            if desired_me in raw_data['bpos'][name]:
+                if desired_te in raw_data['bpos'][name][desired_me]:
+                    needed_copies[name][3] = False
     
     for job in job_data:
         if job["name"] in needed_copies:
