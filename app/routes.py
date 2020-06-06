@@ -1,10 +1,10 @@
 from app import app, client, esi
 from app.forms import LoginForm, RequestForm, CompleteForm
-from app.models import User
+from app.models import User, Request
 from collections import OrderedDict
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user
-import datetime
+from datetime import datetime
 import json
 import requests as req
 import swagger_client
@@ -17,11 +17,10 @@ from swagger_client.rest import ApiException
 def index():
     is_brave_collective = False
     is_brave_industries = False
-    allow_request = True
+    allow_request = False
     bpc_data = OrderedDict()
     form = RequestForm()
 
-    # print(current_user.is_authenticated)
     if current_user.is_authenticated:
         api = swagger_client.CharacterApi()
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
@@ -29,18 +28,17 @@ def index():
 
         response = api.get_characters_character_id(current_user.id)
 
-        # print(response)
-
         if response.alliance_id == 99003214:
             is_brave_collective = True
         if response.corporation_id == 98445423:
             is_brave_industries = True
 
         # Check if the user has an outstanding request
-        # This doesn't currently work so 'allow_request' will always be False.
-        # reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id).first()
-        # if reqs is None:
-        #     allow_request = True
+        query = client.query(kind='Request')
+        query.add_filter('complete_time', '=', None)
+        reqs = list(query.add_filter('char_id', '=', current_user.id).fetch())
+        if len(reqs) == 0:
+            allow_request = True
 
         esi.update_bp_data()
 
@@ -50,8 +48,6 @@ def index():
         bpc_names = sorted(raw_data['bpcs'])
         for name in bpc_names:
             bpc_data[name] = raw_data['bpcs'][name]
-
-        # print(bpc_data)
 
     return render_template('index.html',
                            form=form,
@@ -133,6 +129,7 @@ def submit():
     print("User '{0}' ({1}) is requesting the following:".format(current_user.username,
                                                                  current_user.id))
     output = ''
+    print(request.values)
     for item in request.values:
         if item == "csrf_token":
             continue
@@ -148,12 +145,19 @@ def submit():
     if requested > 10:
         return redirect(url_for('index'))
 
-    # new_request = Request(request=output,
-    #                       create_time=datetime.datetime.utcnow(),
-    #                       char_id=current_user.id,
-    #                       complete_time=None,
-    #                       completed_by=None)
-    #
+    new_request = Request(request=output,
+                          create_time=datetime.utcnow(),
+                          char_id=current_user.id,
+                          complete_time=None,
+                          completed_by=None)
+
+    new_req = datastore.Entity(client.key('Request'))
+    new_req.update({'request': new_request.request,
+                    'create_time': new_request.create_time,
+                    'char_id': new_request.char_id,
+                    'complete_time': new_request.complete_time,
+                    'completed_by': new_request.completed_by})
+    client.put(new_req)
     # db.session.add(new_request)
     # db.session.commit()
 
@@ -182,29 +186,36 @@ def requests():
 
         reqs = {}
         if is_brave_industries:
-            pass
-            # reqs = Request.query.filter_by(complete_time=None)
+            query = client.query(kind='Request')
+            reqs = list(query.add_filter('complete_time', '=', None).fetch())
         elif is_brave_collective:
-            pass
-            # reqs = Request.query.filter_by(complete_time=None, char_id=current_user.id)
+            query = client.query(kind='Request')
+            query.add_filter('complete_time', '=', None)
+            reqs = list(query.add_filter('char_id', '=', current_user.id).fetch())
 
+        i = 1
         for entry in reqs:
-            data[entry.id] = []
-            items = entry.request.split('\n')
+            data[i] = []
+            items = entry['request'].split('\n')
+            # items = entry.request.split('\n')
+            query = client.query(kind='User')
+            user = list(query.add_filter('user_id', '=', entry['char_id']).fetch())[0]
             for item in items:
                 if item == "":
                     continue
                 print(item)
                 tokens = item.split('_')
-                user = User.query.filter_by(user_id=entry.char_id).first()
-                temp = {"Character": user.username,
+                # user = User.query.filter_by(user_id=entry.char_id).first()
+                temp = {"Character": user['username'],
+                        'ID': user['user_id'],
                         'Name': tokens[0],
                         'ME': tokens[1],
                         'TE': tokens[2],
                         'Runs': tokens[3],
                         'Copies': tokens[4],
                         'Completed': False}
-                data[entry.id].append(temp)
+                data[i].append(temp)
+            i += 1
 
     return render_template('requests.html',
                            form=form,
@@ -368,6 +379,7 @@ def complete():
 
     print("User '{0}' ({1}) is completing the following requests:".format(current_user.username,
                                                                           current_user.id))
+    print(request.values)
     output = ""
     for item in request.values:
         if item == "csrf_token":
@@ -377,9 +389,21 @@ def complete():
         if request.values[item]:
             print("  {0}: {1}".format(item, request.values[item]))
             output = '{0}{1}_{2}\n'.format(output, item, request.values[item])
+            query = client.query(kind='Request')
+            query.add_filter('complete_time', '=', None)
+            reqs = list(query.add_filter('char_id', '=', int(item)).fetch())
+            print(reqs)
+
+            reqs[0]['completed_by'] = current_user.id
+            reqs[0]['complete_time'] = datetime.utcnow()
+
+            print(reqs[0])
+
+            client.put(reqs[0])
+
             # order = Request.query.filter_by(id=item).first()
             # print(order)
-            # order.complete_time = datetime.datetime.utcnow()
+            # order.complete_time = datetime.utcnow()
             # order.completed_by = current_user.id
             # db.session.commit()
 

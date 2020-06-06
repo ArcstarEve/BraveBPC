@@ -2,6 +2,15 @@
 
 {% block content %}
     <style>
+    #filter {
+      background-position: 10px 12px; /* Position the search icon */
+      background-repeat: no-repeat; /* Do not repeat the icon image */
+      width: 100%; /* Full-width */
+      font-size: 16px; /* Increase font-size */
+      padding: 12px 20px 12px 40px; /* Add some padding */
+      border: 1px solid #ddd; /* Add a grey border */
+      margin-bottom: 12px; /* Add some space below the input */
+    }
     table, th, td {
       border: 1px solid black;
       border-collapse: collapse;
@@ -15,6 +24,25 @@
       justify-content: center;
     }
     </style>
+
+    <script>
+    function filter_bps() {
+      var input, filter, table, tr, td, i, txtValue;
+      input = document.getElementById("filter");
+      filter = input.value.toUpperCase();
+      table = document.getElementById("blueprints");
+      tr = table.getElementsByTagName("tr");
+      for (i = 1; i < tr.length; i++) {
+        txtValue = tr[i].id;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        } else {
+          tr[i].style.display = "none";
+        }
+      }
+    }
+    </script>
+
     {% if current_user.is_anonymous %}
     <h1>Please log in!</h1>
     {% else %}
@@ -24,14 +52,15 @@
     {% if is_brave_collective %}
     <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.</p></div>
 
+    <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
     <div class="container">
         {% if allow_request %}
         <form action="/submit" method="post">
             {{ form.hidden_tag() }}
-            <table>
+            <table id="blueprints">
                 <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th><th>Wanted</th></tr>
                 {% for bpc in bpcs %}
-                <tr>
+                <tr id="{{ bpc }}">
                     <td rowspan="{{ bpcs[bpc]['variants'] }}">{{ bpc }}</td>
                     {% for mes in bpcs[bpc] %}
                     {% if mes == 'variants' %}
@@ -47,7 +76,7 @@
                     <td>{{ runs }}</td>
                     <td>{{ bpcs[bpc][mes][tes][runs] }}</td>
                     <td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>
-                    </tr><tr>
+                    </tr><tr id="{{ bpc }}_extra">
                     {% endif %}
                     {% endfor %}
                     {% endif %}

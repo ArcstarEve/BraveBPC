@@ -21,7 +21,7 @@
             {{ form.hidden_tag() }}
             <table>
                 <tr>
-                    <th>ID</th>
+                    <th></th>
                     <th>Character</th>
                     {% if is_brave_industries %}
                     <th>Fill Request</th>
@@ -38,9 +38,9 @@
                     <td rowspan="{{ requests[request]|length }}">{{ requests[request][0].Character }}</td>
                     {% if is_brave_industries %}
                     {% if request.Completed %}
-                    <td rowspan="{{ requests[request]|length }}"><input type="checkbox" name="{{ request }}" disabled="disabled"></td>
+                    <td rowspan="{{ requests[request]|length }}"><input type="checkbox" name="{{ requests[request][0].ID }}" disabled="disabled"></td>
                     {% else %}
-                    <td rowspan="{{ requests[request]|length }}"><input type="checkbox" name="{{ request }}"></td>
+                    <td rowspan="{{ requests[request]|length }}"><input type="checkbox" name="{{ requests[request][0].ID }}"></td>
                     {% endif %}
                     {% endif %}
                     {% for item in requests[request] %}
