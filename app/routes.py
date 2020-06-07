@@ -167,6 +167,7 @@ def submit():
     print(output)
 
     if requested > 10:
+        flash('Please limit your requests to 10 BPCs at a time.')
         return redirect(url_for('index'))
 
     new_request = Request(request=output,

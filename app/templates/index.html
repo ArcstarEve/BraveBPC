@@ -127,6 +127,15 @@
 
     {% if is_brave_collective %}
     <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.</p></div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li style="color:red;">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
 
     <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
     <div class="container">
