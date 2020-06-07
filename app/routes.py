@@ -12,6 +12,12 @@ from google.cloud import datastore
 from swagger_client.rest import ApiException
 
 
+def my_sort(value):
+    if value == 'variants':
+        return 1000
+    return int(value)
+
+
 @app.route('/')
 @app.route('/index')
 def index():
@@ -47,7 +53,25 @@ def index():
 
         bpc_names = sorted(raw_data['bpcs'])
         for name in bpc_names:
-            bpc_data[name] = raw_data['bpcs'][name]
+            bpc_data[name] = {}
+            mes = sorted(raw_data['bpcs'][name], reverse=True, key=my_sort)
+            for me in mes:
+                if me == 'variants':
+                    bpc_data[name]['variants'] = raw_data['bpcs'][name]['variants']
+                    continue
+                bpc_data[name][me] = {}
+                tes = sorted(raw_data['bpcs'][name][me], reverse=True, key=my_sort)
+                for te in tes:
+                    if te == 'variants':
+                        bpc_data[name][me]['variants'] = raw_data['bpcs'][name][me]['variants']
+                        continue
+                    bpc_data[name][me][te] = {}
+                    runs = sorted(raw_data['bpcs'][name][me][te], reverse=True, key=my_sort)
+                    for run in runs:
+                        if run == 'variants':
+                            bpc_data[name][me][te]['variants'] = raw_data['bpcs'][name][me][te]['variants']
+                            continue
+                        bpc_data[name][me][te][run] = raw_data['bpcs'][name][me][te][run]
 
     return render_template('index.html',
                            form=form,

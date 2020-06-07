@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 from app import app
+from swagger_client.rest import ApiException
 import json
 import os
 import requests
 import swagger_client
+import time
 
 BRAVE_INDUSTRIES = 98445423
 
@@ -39,7 +41,20 @@ def update_bp_data():
     locations = []
     bp_data = []
     page = 1
-    temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
+    retry = True
+    count = 0
+    while retry and count < 10:
+        retry = False
+        try:
+            temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
+        except ApiException as e:
+            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            time.sleep(10)
+            retry = True
+            count += 1
+    if retry:
+        # print("Failed to refresh BP data")
+        return
 
     bp_data.extend(temp_data)
     while len(temp_data) > 0:
@@ -49,17 +64,57 @@ def update_bp_data():
             if item["location_id"] not in locations:
                 locations.append(item["location_id"])
         page += 1
-        temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
+        retry = True
+        count = 0
+        while retry and count < 10:
+            retry = False
+            try:
+                temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
+            except ApiException as e:
+                # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+                time.sleep(10)
+                retry = True
+                count += 1
+        if retry:
+            # print("Failed to refresh BP data")
+            return
         bp_data.extend(temp_data)
 
     api = swagger_client.UniverseApi(swagger_client.ApiClient(config))
     api.api_client.set_default_header('User-Agent', 'universe-info')
     api.api_client.host = "https://esi.tech.ccp.is"
 
-    print(len(items))
-    item_names = api.post_universe_names(items[:750])
-    item_names.extend(api.post_universe_names(items[750:]))
-    print(len(item_names))
+    item_names = []
+    # print(len(items))
+    retry = True
+    count = 0
+    while retry and count < 10:
+        retry = False
+        try:
+            item_names = api.post_universe_names(items[:750])
+        except ApiException as e:
+            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            time.sleep(10)
+            retry = True
+            count += 1
+    if retry:
+        # print("Failed to refresh BP data")
+        return
+    retry = True
+    count = 0
+    while retry and count < 10:
+        retry = False
+        try:
+            item_names.extend(api.post_universe_names(items[750:]))
+        except ApiException as e:
+            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            time.sleep(10)
+            retry = True
+            count += 1
+    if retry:
+        # print("Failed to refresh BP data")
+        return
+    # print(len(item_names))
     names = {}
     for item in item_names:
         names[item["id"]] = item["name"]
@@ -98,11 +153,11 @@ def update_bp_data():
                     else:
                         data['bpos'][item]['variants'] += 1
                         data['bpos'][item][me] = {'variants': 1,
-                                                te: stock[item][entry]}
+                                                  te: stock[item][entry]}
                 else:
                     data['bpos'][item] = {'variants': 1,
-                                        me: {'variants': 1,
-                                            te: stock[item][entry]}}
+                                          me: {'variants': 1,
+                                               te: stock[item][entry]}}
 
             else:
                 if item in data['bpcs']:
@@ -119,7 +174,7 @@ def update_bp_data():
                             data['bpcs'][item]['variants'] += 1
                             data['bpcs'][item][me]['variants'] += 1
                             data['bpcs'][item][me][te] = {'variants': 1,
-                                                        runs: stock[item][entry]}
+                                                          runs: stock[item][entry]}
                     else:
                         data['bpcs'][item]['variants'] += 1
                         data['bpcs'][item][me] = {'variants': 1,
@@ -149,7 +204,21 @@ def update_job_data():
     api.api_client.set_default_header('User-Agent', 'industry-info')
     api.api_client.host = "https://esi.tech.ccp.is"
 
-    job_data = api.get_corporations_corporation_id_industry_jobs(BRAVE_INDUSTRIES)
+    job_data = {}
+    retry = True
+    count = 0
+    while retry and count < 10:
+        retry = False
+        try:
+            job_data = api.get_corporations_corporation_id_industry_jobs(BRAVE_INDUSTRIES)
+        except ApiException as e:
+            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            time.sleep(10)
+            retry = True
+            count += 1
+    if retry:
+        # print("Failed to refresh BP data")
+        return
     # print(json.dumps(job_data, indent=4))
 
     items = []
@@ -162,7 +231,22 @@ def update_job_data():
     api.api_client.host = "https://esi.tech.ccp.is"
 
     print(len(items))
-    item_names = api.post_universe_names(items)
+    item_names = []
+    # print(len(items))
+    retry = True
+    count = 0
+    while retry and count < 10:
+        retry = False
+        try:
+            item_names = api.post_universe_names(items)
+        except ApiException as e:
+            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            time.sleep(10)
+            retry = True
+            count += 1
+    if retry:
+        # print("Failed to refresh BP data")
+        return
     print(len(item_names))
     names = {}
     for item in item_names:

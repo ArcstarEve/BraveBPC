@@ -27,19 +27,95 @@
 
     <script>
     function filter_bps() {
-      var input, filter, table, tr, td, i, txtValue;
-      input = document.getElementById("filter");
-      filter = input.value.toUpperCase();
-      table = document.getElementById("blueprints");
-      tr = table.getElementsByTagName("tr");
-      for (i = 1; i < tr.length; i++) {
-        txtValue = tr[i].id;
-        if (txtValue.toUpperCase().indexOf(filter) > -1) {
-          tr[i].style.display = "";
-        } else {
-          tr[i].style.display = "none";
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("filter");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("blueprints");
+        tr = table.getElementsByTagName("tr");
+        base = "";
+        skipping = false;
+        for (i = 1; i < tr.length; i++) {
+            txtValue = tr[i].id;
+            if (txtValue.indexOf('_') == -1) {
+                base = txtValue;
+                if (tr[i].children[0].rowSpan == 1) {
+                    skipping = true;
+                }
+                else {
+                    skipping = false;
+                }
+            }
+            else {
+                if (skipping) {
+                    continue;
+                }
+            }
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
         }
-      }
+    }
+
+    function collapse(elem) {
+        var id = elem.parentNode.id;
+        var base_count = 0;
+        var showing = false;
+        var base_me = 0;
+        var me_count = 0;
+        var base_te = 0;
+        var te_count = 0;
+        var base = null;
+
+        table = document.getElementById("blueprints");
+        tr = table.getElementsByTagName("tr");
+        for (i = 1; i < tr.length; i++) {
+            txtValue = tr[i].id;
+            if (id == txtValue) {
+                base_me = tr[i].children[1].textContent;
+                base_te = tr[i].children[2].textContent;
+                base = tr[i];
+            }
+            else if  (tr[i].id.startsWith(id)) {
+                var tokens = tr[i].id.split('_');
+                if (tokens[0] == id) {
+                    base_count += 1;
+                }
+                if (tokens[1] == base_me) {
+                    me_count += 1;
+                }
+                if (tokens[2] == base_te) {
+                    te_count += 1;
+                }
+                if (tr[i].style.display == "none") {
+                    tr[i].style.display = "";
+                }
+                else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+
+        if (base.children[0].rowSpan == 1) {
+            base.children[0].rowSpan = base_count
+        }
+        else {
+            base.children[0].rowSpan = 1
+        }
+        if (base.children[1].rowSpan == 1) {
+            base.children[1].rowSpan = me_count
+        }
+        else {
+            base.children[1].rowSpan = 1
+        }
+        if (base.children[2].rowSpan == 1) {
+            base.children[2].rowSpan = te_count
+        }
+        else {
+            base.children[2].rowSpan = 1
+        }
+        base = null;
     }
     </script>
 
@@ -61,22 +137,22 @@
                 <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th><th>Wanted</th></tr>
                 {% for bpc in bpcs %}
                 <tr id="{{ bpc }}">
-                    <td rowspan="{{ bpcs[bpc]['variants'] }}">{{ bpc }}</td>
+                    <td rowspan="1" onclick="collapse(this)">{{ bpc }}</td>
                     {% for mes in bpcs[bpc] %}
                     {% if mes == 'variants' %}
                     {% else %}
-                    <td rowspan="{{ bpcs[bpc][mes]['variants'] }}">{{ mes }}</td>
+                    <td rowspan="1">{{ mes }}</td>
                     {% for tes in bpcs[bpc][mes] %}
                     {% if tes == 'variants' %}
                     {% else %}
-                    <td rowspan="{{ bpcs[bpc][mes][tes]['variants'] }}">{{ tes }}</td>
+                    <td rowspan="1">{{ tes }}</td>
                     {% for runs in bpcs[bpc][mes][tes] %}
                     {% if runs == 'variants' %}
                     {% else %}
                     <td>{{ runs }}</td>
                     <td>{{ bpcs[bpc][mes][tes][runs] }}</td>
                     <td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>
-                    </tr><tr id="{{ bpc }}_extra">
+                    </tr><tr id="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" style="display:none;">
                     {% endif %}
                     {% endfor %}
                     {% endif %}
