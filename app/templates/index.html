@@ -5,11 +5,12 @@
     #filter {
       background-position: 10px 12px; /* Position the search icon */
       background-repeat: no-repeat; /* Do not repeat the icon image */
-      width: 100%; /* Full-width */
+      width: 75%;
       font-size: 16px; /* Increase font-size */
       padding: 12px 20px 12px 40px; /* Add some padding */
-      border: 1px solid #ddd; /* Add a grey border */
+      border: 2px solid #888; /* Add a grey border */
       margin-bottom: 12px; /* Add some space below the input */
+      justify-content: center;
     }
     table, th, td {
       border: 1px solid black;
@@ -126,7 +127,7 @@
     {% endif %}
 
     {% if is_brave_collective %}
-    <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.</p></div>
+    <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.  Items that appear in green are items the program has a BPO for.  Items appearing in yellow are items that we only have in stock thanks to generous donations and are in limited supply.  Any item with a "[+]" can be expanded by clicking on the name of the item.</p></div>
         {% with messages = get_flashed_messages() %}
         {% if messages %}
         <ul>
@@ -137,18 +138,25 @@
         {% endif %}
         {% endwith %}
 
-    <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
+    {% if not allow_request %}
+    <div><p>You are only allowed to have one active request at a time.  You can view the inventory, but cannot submit another request until your previous request has been completed.</p></div>
+    {% endif %}
     <div class="container">
-        {% if allow_request %}
+    <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
+    </div>
+    <div class="container">
         <form action="/submit" method="post">
             {{ form.hidden_tag() }}
             <table id="blueprints">
-                <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th><th>Wanted</th></tr>
+                <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th>{% if allow_request %}<th>Wanted</th>{% endif %}</tr>
                 {% for bpc in bpcs %}
                 <tr id="{{ bpc }}">
-                    <td rowspan="1" onclick="collapse(this)">{{ bpc }}</td>
+                    <td rowspan="1" onclick="collapse(this)" {% if bpcs[bpc]['have_bpo'] %} bgcolor="#6CBB3C" {% else %} bgcolor="#FFDB58" {% endif %}>
+                        {% if bpcs[bpc]['variants'] > 1 %}<b>[+]</b> {% endif %}{{ bpc }}
+                    </td>
                     {% for mes in bpcs[bpc] %}
                     {% if mes == 'variants' %}
+                    {% elif mes == 'have_bpo' %}
                     {% else %}
                     <td rowspan="1">{{ mes }}</td>
                     {% for tes in bpcs[bpc][mes] %}
@@ -160,7 +168,7 @@
                     {% else %}
                     <td>{{ runs }}</td>
                     <td>{{ bpcs[bpc][mes][tes][runs] }}</td>
-                    <td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>
+                    {% if allow_request %}<td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>{% endif %}
                     </tr><tr id="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" style="display:none;">
                     {% endif %}
                     {% endfor %}
@@ -171,11 +179,12 @@
                 </tr>
                 {% endfor %}
             </table>
+            {% if allow_request %}
             <p>{{ form.submit() }}</p>
+            {% else %}
+            <p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>
+            {% endif %}
         </form>
-        {% else %}
-        <p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>
-        {% endif %}
     </div>
 
     {% else %}

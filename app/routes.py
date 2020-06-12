@@ -72,6 +72,7 @@ def index():
                             bpc_data[name][me][te]['variants'] = raw_data['bpcs'][name][me][te]['variants']
                             continue
                         bpc_data[name][me][te][run] = raw_data['bpcs'][name][me][te][run]
+            bpc_data[name]['have_bpo'] = (name in raw_data['bpos'])
 
     return render_template('index.html',
                            form=form,
