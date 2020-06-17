@@ -85,9 +85,9 @@
                 }
                 if (tokens[1] == base_me) {
                     me_count += 1;
-                }
-                if (tokens[2] == base_te) {
-                    te_count += 1;
+                    if (tokens[2] == base_te) {
+                        te_count += 1;
+                    }
                 }
                 if (tr[i].style.display == "none") {
                     tr[i].style.display = "";
@@ -118,25 +118,98 @@
         }
         base = null;
     }
+
+    function collapseAll() {
+        table = document.getElementById("blueprints");
+        tr = table.getElementsByTagName("tr");
+        var base_count = 0;
+        var showing = false;
+        var base_me = 0;
+        var me_count = 0;
+        var base_te = 0;
+        var te_count = 0;
+        var base = null;
+        for (i = 1; i < tr.length; i++) {
+            txtValue = tr[i].id;
+            if (txtValue.indexOf("_") == -1) {
+                if (i != 1) {
+                    base.children[0].rowSpan = 1;
+                    base.children[1].rowSpan = 1;
+                    base.children[2].rowSpan = 1;
+                }
+                id = txtValue
+                base_count = 0;
+                base_me = tr[i].children[1].textContent;
+                base_te = tr[i].children[2].textContent;
+                base = tr[i];
+            }
+            else if  (tr[i].id.startsWith(id)) {
+                var tokens = tr[i].id.split('_');
+                if (tokens[0] == id) {
+                    base_count += 1;
+                }
+                if (tokens[1] == base_me) {
+                    me_count += 1;
+                    if (tokens[2] == base_te) {
+                        te_count += 1;
+                    }
+                }
+                if (tr[i].style.display == "none") {
+                    tr[i].style.display = "";
+                }
+                else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+
+        base.children[0].rowSpan = 1;
+        base.children[1].rowSpan = 1;
+        base.children[2].rowSpan = 1;
+        base = null;
+    }
+
+    function form_check(form) {
+        return confirm('Do you really want to submit the request?');
+    }
     </script>
 
     {% if current_user.is_anonymous %}
     <h1>Please log in!</h1>
     {% else %}
-    <h1>Hi, {{ current_user.username }}!</h1>
+    <h2>Welcome to Brave's BPC Request Program!</h2>
     {% endif %}
 
     {% if is_brave_collective %}
-    <div><p>Welcome member of Brave Collective!  Please use this form to request up to 10 BPCs from our collection.  Items that appear in green are items the program has a BPO for.  Items appearing in yellow are items that we only have in stock thanks to generous donations and are in limited supply.  Any item with a "[+]" can be expanded by clicking on the name of the item.</p></div>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
+    <div>
+        <p>Thank you for you interest in Brave's BPC Program.  This program is intended to be used by members of Brave Collective to help them build whatever Brave needs.</p>
+        <p>The table below contains all of the available BPCs the program has.  Please use the search box to filter the list if there is something specific you are looking for.</p>
+        <p>The list is broken down as follows:</p>
         <ul>
-            {% for message in messages %}
-            <li style="color:red;">{{ message }}</li>
-            {% endfor %}
+            <li>Items in <span style="background-color: #FFDB58">yellow</span> have been donated to the program.</li>
+            <li>Items in <span style="background-color: #6CBB3C">green</span> have a BPO owned by the program.</li>
+            <li>Items with ME/TE in <span style="background-color: #81D8D0">blue</span> are max researched</li>
+            <li>Items with '[+]' have multiple variations available.  Hint: Sub-optimal variations are great for invention.</li>
         </ul>
-        {% endif %}
-        {% endwith %}
+        <p>Additionally, please keep the following rules in mind when making requests:</p>
+        <ul>
+            <li>Requests are limited to 10 BPCs at a time.  Requests for more than 10 BPCs at a time are not allowed to be submitted.</li>
+            <li>The form will not let you request more than we have in stock.  However, <b>just because you make a request does not mean it will be completely filled</b>.  Exactly what to fill is at the discretion of the program members</li>
+            <li>You are limited to 1 request at a time.  This is per person not account.</li>
+            <li>The program operates out of Dunk's Laboratory in GE-8JV.  All requests will be filled there.</li>
+        </ul>
+        <p>If you would like to make donations to be BPC program, please submit contracts to '<b>Brave Industries</b>' corporation.</p>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li style="color:red;">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
 
     {% if not allow_request %}
     <div><p>You are only allowed to have one active request at a time.  You can view the inventory, but cannot submit another request until your previous request has been completed.</p></div>
@@ -145,31 +218,36 @@
     <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
     </div>
     <div class="container">
-        <form action="/submit" method="post">
+        <form action="/submit" method="post" onsubmit="form_check(this)">
             {{ form.hidden_tag() }}
-            <table id="blueprints">
+            {% if allow_request %}
+            <p>{{ form.submit() }}</p>
+            {% else %}
+            <p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>
+            {% endif %}
+            <table id="blueprints" onload="collapseAll()">
                 <tr><th>Name</th><th>ME</th><th>TE</th><th>Runs</th><th>Copies</th>{% if allow_request %}<th>Wanted</th>{% endif %}</tr>
                 {% for bpc in bpcs %}
                 <tr id="{{ bpc }}">
-                    <td rowspan="1" onclick="collapse(this)" {% if bpcs[bpc]['have_bpo'] %} bgcolor="#6CBB3C" {% else %} bgcolor="#FFDB58" {% endif %}>
+                    <td rowspan="{{ bpcs[bpc]['variants'] }}" onclick="collapse(this)" {% if bpcs[bpc]['have_bpo'] %} bgcolor="#6CBB3C" {% else %} bgcolor="#FFDB58" {% endif %}>
                         {% if bpcs[bpc]['variants'] > 1 %}<b>[+]</b> {% endif %}{{ bpc }}
                     </td>
                     {% for mes in bpcs[bpc] %}
                     {% if mes == 'variants' %}
                     {% elif mes == 'have_bpo' %}
                     {% else %}
-                    <td rowspan="1">{{ mes }}</td>
+                    <td rowspan="{{ bpcs[bpc][mes]['variants'] }}" {% if mes == '10' %}bgcolor="#81D8D0"{% endif %}>{{ mes }}</td>
                     {% for tes in bpcs[bpc][mes] %}
                     {% if tes == 'variants' %}
                     {% else %}
-                    <td rowspan="1">{{ tes }}</td>
+                    <td rowspan="{{ bpcs[bpc][mes][tes]['variants'] }}" {% if tes == '20' %}bgcolor="#81D8D0"{% endif %}>{{ tes }}</td>
                     {% for runs in bpcs[bpc][mes][tes] %}
                     {% if runs == 'variants' %}
                     {% else %}
                     <td>{{ runs }}</td>
                     <td>{{ bpcs[bpc][mes][tes][runs] }}</td>
                     {% if allow_request %}<td><input type="number" name="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" value="" size="3" min="0" max="{{ bpcs[bpc][mes][tes][runs] }}"></td>{% endif %}
-                    </tr><tr id="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}" style="display:none;">
+                    </tr><tr id="{{ bpc }}_{{ mes }}_{{ tes }}_{{ runs }}">
                     {% endif %}
                     {% endfor %}
                     {% endif %}

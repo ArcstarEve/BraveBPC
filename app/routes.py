@@ -160,12 +160,16 @@ def submit():
             continue
         if item == "submit":
             continue
-        if request.values[item]:
+        if request.values[item] and int(request.values[item]) != 0:
             requested += int(request.values[item])
             print("  {0}: {1}".format(item, request.values[item]))
             output = '{0}{1}_{2}\n'.format(output, item, request.values[item])
     print(requested)
     print(output)
+
+    if requested == 0:
+        flash('Please select at least one item before submitting a request.')
+        return redirect(url_for('index'))
 
     if requested > 10:
         flash('Please limit your requests to 10 BPCs at a time.')
@@ -229,7 +233,7 @@ def requests():
             for item in items:
                 if item == "":
                     continue
-                print(item)
+                # print(item)
                 tokens = item.split('_')
                 # user = User.query.filter_by(user_id=entry.char_id).first()
                 temp = {"Character": user['username'],

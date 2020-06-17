@@ -11,10 +11,10 @@
       text-align: left;
     }
     </style>
-    <h1>Hi, {{ current_user.username }}!</h1>
+    <h3>Hello, {{ current_user.username }}!</h3>
 
     {% if is_brave_collective %}
-    <div><p>Welcome member of Brave Collective!</p></div>
+    <div><p>This page lists the current active request you have (if any).</p></div>
 
     <div>
         <form action="/complete" method="post">

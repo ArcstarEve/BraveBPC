@@ -6,7 +6,7 @@
       <title>Welcome to BPC Status</title>
       {% endif %}
     </head>
-    <body>
+    <body onload="collapseAll()">
         <div>
             BPC Status:
             <a href="{{ url_for('index') }}">Home</a>&ensp;
@@ -28,5 +28,8 @@
         </div>
         <hr>
         {% block content %}{% endblock %}
+        <div>
+            <p>This site is currently maintained by Arcstar Naari.  Please send any feedback or issues either through in-game mail or on Brave Slack.</p>
+        </div>
     </body>
 </html>
