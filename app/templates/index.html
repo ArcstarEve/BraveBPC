@@ -167,6 +167,9 @@
         base.children[1].rowSpan = 1;
         base.children[2].rowSpan = 1;
         base = null;
+
+        document.getElementById("filter").disabled = false;
+
     }
 
     function form_check(form) {
@@ -182,6 +185,7 @@
 
     {% if is_brave_collective %}
     <div>
+        <p><b>Brave's BPC program is currently unavailable.  Please check back later.</b></p>
         <p>Thank you for you interest in Brave's BPC Program.  This program is intended to be used by members of Brave Collective to help them build whatever Brave needs.</p>
         <p>The table below contains all of the available BPCs the program has.  Please use the search box to filter the list if there is something specific you are looking for.</p>
         <p>The list is broken down as follows:</p>
@@ -196,7 +200,7 @@
             <li>Requests are limited to 10 BPCs at a time.  Requests for more than 10 BPCs at a time are not allowed to be submitted.</li>
             <li>The form will not let you request more than we have in stock.  However, <b>just because you make a request does not mean it will be completely filled</b>.  Exactly what to fill is at the discretion of the program members</li>
             <li>You are limited to 1 request at a time.  This is per person not account.</li>
-            <li>The program operates out of Dunk's Laboratory in GE-8JV.  All requests will be filled there.</li>
+            <li>The program operates out of P-ZMZV - Cagali did it.  All requests will be filled there.</li>
         </ul>
         <p>If you would like to make donations to be BPC program, please submit contracts to '<b>Brave Industries</b>' corporation.</p>
     </div>
@@ -213,9 +217,10 @@
 
     {% if not allow_request %}
     <div><p>You are only allowed to have one active request at a time.  You can view the inventory, but cannot submit another request until your previous request has been completed.</p></div>
+    <!--<div><p><font color="red"><b>Requests are currently disabled.  This functionality should return in a few days.  Please bear with us as we implement some changes to the BPC program.</b></font></p></div>-->
     {% endif %}
     <div class="container">
-    <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name">
+    <input type="text" id="filter" onkeyup="filter_bps()" placeholder="Search for names.." title="Type in a name" disabled>
     </div>
     <div class="container">
         <form action="/submit" method="post" onsubmit="form_check(this)">
@@ -260,7 +265,8 @@
             {% if allow_request %}
             <p>{{ form.submit() }}</p>
             {% else %}
-            <p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>
+            <!--<p>You are only allowed to have one active request at a time.  Please wait for your previous request to be completed.</p>-->
+            <p><font color="red"><b>Requests are currently disabled.  They will hopefully be returning shortly.  Please be patient.</b></font></p>
             {% endif %}
         </form>
     </div>

@@ -6,8 +6,10 @@ import os
 import requests
 import swagger_client
 import time
+from bravado.client import SwaggerClient
 
 BRAVE_INDUSTRIES = 98445423
+
 
 def update_bp_data():
     try:
@@ -16,6 +18,7 @@ def update_bp_data():
 
         last_time = datetime.strptime(existing_data['last_updated'], "%Y-%m-%d %H:%M:%S.%f")
         refresh_time = last_time + timedelta(hours=1)
+        # refresh_time = last_time + timedelta(minutes=1)
 
         if datetime.now() < refresh_time:
             print("Not enough time has passed to requery the blueprints")
@@ -30,12 +33,10 @@ def update_bp_data():
     data = json.dumps(payload)
 
     r = requests.post("https://login.eveonline.com/oauth/token", data=data, headers=headers)
+    access_token = r.json()['access_token']
 
-    config = swagger_client.Configuration()
-    config.access_token = r.json()['access_token']
-    api = swagger_client.CorporationApi(swagger_client.ApiClient(config))
-    api.api_client.set_default_header('User-Agent', 'corporation-info')
-    api.api_client.host = "https://esi.tech.ccp.is"
+    client = SwaggerClient.from_url('https://esi.evetech.net/latest/swagger.json')
+    api = client.Corporation
 
     items = []
     locations = []
@@ -46,75 +47,98 @@ def update_bp_data():
     while retry and count < 10:
         retry = False
         try:
-            temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
-        except ApiException as e:
-            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            temp_data = api.get_corporations_corporation_id_blueprints(corporation_id=BRAVE_INDUSTRIES,
+                                                                       page=page,
+                                                                       token=access_token).result()
+        except Exception as e:
+            print("Exception when calling Corporation->get_corporations_corporation_id_blueprints: %s\n" % e)
             time.sleep(10)
             retry = True
             count += 1
     if retry:
-        # print("Failed to refresh BP data")
+        print("Failed to refresh BP data")
         return
+    for item in temp_data:
+        if int(item["type_id"]) not in items:
+            items.append(int(item["type_id"]))
+        if item["location_id"] not in locations:
+            locations.append(item["location_id"])
 
     bp_data.extend(temp_data)
-    while len(temp_data) > 0:
-        for item in temp_data:
-            if int(item["type_id"]) not in items:
-                items.append(int(item["type_id"]))
-            if item["location_id"] not in locations:
-                locations.append(item["location_id"])
+    while len(temp_data) == 1000:
         page += 1
         retry = True
         count = 0
         while retry and count < 10:
             retry = False
             try:
-                temp_data = api.get_corporations_corporation_id_blueprints(BRAVE_INDUSTRIES, page=page)
-            except ApiException as e:
-                # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+                temp_data = api.get_corporations_corporation_id_blueprints(corporation_id=BRAVE_INDUSTRIES,
+                                                                           page=page,
+                                                                           token=access_token).result()
+            except Exception as e:
+                temp_data = []
+                print(page)
+                print(str(e))
+                if "Requested page does not exist" in str(e):
+                    print('Ending BP lookup')
+                    break
+                print("Exception when calling MarketApi->get_corporations_corporation_id_blueprints: %s\n" % e)
                 time.sleep(10)
                 retry = True
                 count += 1
         if retry:
-            # print("Failed to refresh BP data")
+            print("Failed to refresh BP data page {0}".format(page))
             return
+        for item in temp_data:
+            if int(item["type_id"]) not in items:
+                items.append(int(item["type_id"]))
+            if item["location_id"] not in locations:
+                locations.append(item["location_id"])
         bp_data.extend(temp_data)
 
-    api = swagger_client.UniverseApi(swagger_client.ApiClient(config))
-    api.api_client.set_default_header('User-Agent', 'universe-info')
-    api.api_client.host = "https://esi.tech.ccp.is"
+    temp = []
+    for item in bp_data:
+        temp.append({"item_id": item.item_id,
+                     "location_flag": item.location_flag,
+                     "location_id": item.location_id,
+                     "material_efficiency": item.material_efficiency,
+                     "quantity": item.quantity,
+                     "runs": item.runs,
+                     "time_efficiency": item.time_efficiency,
+                     "type_id": item.type_id})
+    bp_data = temp
+
+    api = client.Universe
 
     item_names = []
-    # print(len(items))
     retry = True
     count = 0
     while retry and count < 10:
         retry = False
         try:
-            item_names = api.post_universe_names(items[:750])
-        except ApiException as e:
-            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            item_names = api.post_universe_names(ids=items[:750]).result()
+        except Exception as e:
+            print("Exception when calling UniverseApi->post_universe_names: %s\n" % e)
             time.sleep(10)
             retry = True
             count += 1
     if retry:
-        # print("Failed to refresh BP data")
+        print("Failed to get item names")
         return
     retry = True
     count = 0
     while retry and count < 10:
         retry = False
         try:
-            item_names.extend(api.post_universe_names(items[750:]))
-        except ApiException as e:
-            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+            item_names.extend(api.post_universe_names(ids=items[750:]).result())
+        except Exception as e:
+            print("Exception when calling UniverseApi->post_universe_names: %s\n" % e)
             time.sleep(10)
             retry = True
             count += 1
     if retry:
-        # print("Failed to refresh BP data")
+        print("Failed to get item names")
         return
-    # print(len(item_names))
     names = {}
     for item in item_names:
         names[item["id"]] = item["name"]
@@ -178,12 +202,12 @@ def update_bp_data():
                     else:
                         data['bpcs'][item]['variants'] += 1
                         data['bpcs'][item][me] = {'variants': 1,
-                                                te: {'variants': 1,
-                                                    runs: stock[item][entry]}}
+                                                  te: {'variants': 1,
+                                                       runs: stock[item][entry]}}
                 else:
                     data['bpcs'][item] = {'variants': 1,
-                                        me: {'variants': 1,
-                                            te: {'variants': 1,
+                                          me: {'variants': 1,
+                                               te: {'variants': 1,
                                                     runs: stock[item][entry]}}}
 
     with open('{0}bps2.json'.format(app.config['ROOT_PATH']), 'w') as outfile:

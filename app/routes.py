@@ -4,7 +4,7 @@ from app.models import User, Request
 from collections import OrderedDict
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import requests as req
 import swagger_client
@@ -34,7 +34,7 @@ def index():
 
         response = api.get_characters_character_id(current_user.id)
 
-        if response.alliance_id == 99003214:
+        if response.alliance_id == 99003214 or response.alliance_id == 99010079:
             is_brave_collective = True
         if response.corporation_id == 98445423:
             is_brave_industries = True
@@ -78,7 +78,7 @@ def index():
                            form=form,
                            title='Home',
                            bpcs=bpc_data,
-                           allow_request=allow_request,
+                           allow_request=False,
                            is_brave_industries=is_brave_industries,
                            is_brave_collective=is_brave_collective)
 
@@ -99,7 +99,7 @@ def sales():
 
         # print(response)
 
-        if response.alliance_id == 99003214:
+        if response.alliance_id == 99003214 or response.alliance_id == 99010079:
             is_brave_collective = True
         if response.corporation_id == 98445423:
             is_brave_industries = True
@@ -209,7 +209,7 @@ def requests():
 
         response = api.get_characters_character_id(current_user.id)
 
-        if response.alliance_id == 99003214:
+        if response.alliance_id == 99003214 or response.alliance_id == 99010079:
             is_brave_collective = True
         if response.corporation_id == 98445423:
             is_brave_industries = True
@@ -230,6 +230,10 @@ def requests():
             # items = entry.request.split('\n')
             query = client.query(kind='User')
             user = list(query.add_filter('user_id', '=', entry['char_id']).fetch())[0]
+            now = datetime.now(timezone.utc)
+            delta = str(now - entry['create_time'])
+            delta = delta.split('.', 2)[0]
+            print(delta)
             for item in items:
                 if item == "":
                     continue
@@ -243,6 +247,7 @@ def requests():
                         'TE': tokens[2],
                         'Runs': tokens[3],
                         'Copies': tokens[4],
+                        'Age': delta,
                         'Completed': False}
                 data[i].append(temp)
             i += 1
@@ -273,7 +278,7 @@ def todo():
 
         response = api.get_characters_character_id(current_user.id)
 
-        if response.alliance_id == 99003214:
+        if response.alliance_id == 99003214 or response.alliance_id == 99010079:
             is_brave_collective = True
         if response.corporation_id == 98445423:
             is_brave_industries = True
@@ -284,13 +289,38 @@ def todo():
     esi.update_bp_data()
     esi.update_job_data()
 
-    ignore = ['Civilian Data Analyzer Blueprint']
-    adjust = ['Apostle Blueprint',
+    ignore = ['Civilian Data Analyzer Blueprint',
+              'Improved Frentix Booster Reaction Formula',
+              'Standard Frentix Booster Reaction Formula']
+    adjust = ['Ansiblex Jump Gate Blueprint',
+              'Apostle Blueprint',
+              'Athanor Blueprint',
               'Chimera Blueprint',
+              'Heavy Fleeting Compact Warp Disruptor Blueprint',
+              'Heavy J5 Enduring Warp Disruptor Blueprint',
+              'Heavy J5b Enduring Warp Scrambler Blueprint',
+              'Heavy Warp Scrambler I Blueprint',
               'Ion Siege Blaster I Blueprint',
               'Pharolux Cyno Beacon Blueprint',
+              'Rapid Torpedo Launcher I Blueprint',
+              'Standup Guided Bomb Launcher I Blueprint',
               'Standup M-Set Biochemical Reactor Time Efficiency I Blueprint',
+              'Structure Acceleration Coils Blueprint',
+              'Structure Advertisement Nexus Blueprint',
+              'Structure Construction Parts Blueprint',
+              'Structure Docking Bay Blueprint',
+              'Structure EXERT Conduit Coupler Blueprint',
+              'Structure Electromagnetic Sensor Blueprint',
+              'Structure Factory Blueprint',
+              'Structure Hangar Array Blueprint',
+              'Structure Laboratory Blueprint',
+              'Structure Medical Center Blueprint',
+              'Structure Office Center Blueprint',
+              'Structure Repair Facility Blueprint',
+              'Structure Reprocessing Plant Blueprint',
+              'Structure Storage Bay Blueprint',
               'Tenebrex Cyno Jammer Blueprint',
+              'Territorial Claim Unit Blueprint',
               'Triple Neutron Blaster Cannon I Blueprint']
 
     with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
@@ -329,6 +359,9 @@ def todo():
         max_runs = 0
         qty = 0
         if name in raw_data['bpcs'] and desired_me in raw_data['bpcs'][name] and desired_te in raw_data['bpcs'][name][desired_me]:
+            # if name == 'Medium Ancillary Current Router I Blueprint':
+            #     qty = raw_data['bpcs'][name][desired_me][desired_te]['60']
+            # else:
             for entry in raw_data['bpcs'][name][desired_me][desired_te]:
                 if entry == 'variants':
                     continue

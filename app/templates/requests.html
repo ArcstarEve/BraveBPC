@@ -26,6 +26,7 @@
                     {% if is_brave_industries %}
                     <th>Fill Request</th>
                     {% endif %}
+                    <th>Age</th>
                     <th>Name</th>
                     <th>ME</th>
                     <th>TE</th>
@@ -43,6 +44,7 @@
                     <td rowspan="{{ requests[request]|length }}"><input type="checkbox" name="{{ requests[request][0].ID }}"></td>
                     {% endif %}
                     {% endif %}
+                    <td rowspan="{{ requests[request]|length }}">{{ requests[request][0].Age }}</td>
                     {% for item in requests[request] %}
                     <td>{{ item.Name }}</td>
                     <td>{{ item.ME }}</td>
