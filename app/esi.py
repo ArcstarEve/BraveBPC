@@ -7,6 +7,7 @@ import requests
 import swagger_client
 import time
 from bravado.client import SwaggerClient
+from google.cloud import secretmanager
 
 BRAVE_INDUSTRIES = 98445423
 
@@ -26,14 +27,23 @@ def update_bp_data():
     except FileNotFoundError:
         pass
 
-    headers = {'Content-Type': 'application/json',
-            'Authorization': 'Basic OWNmZGZhMzJkMTIzNDhmMDkyYzEzNWQzMzU1MzQ1NDU6SGM4b0RDeGFUcHRnRlJZMUtLYlRUdnNDWklOckJPVlliS1ZldElZRA=='}
-    payload = {'grant_type': 'refresh_token',
-            'refresh_token': os.environ.get('ADMIN_TOKEN')}
-    data = json.dumps(payload)
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/bravebpc/secrets/refresh_token/versions/latest"
+    response = client.access_secret_version(name=name)
+    refresh_token = response.payload.data.decode('UTF-8')
 
-    r = requests.post("https://login.eveonline.com/oauth/token", data=data, headers=headers)
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
+               'Authorization': 'Basic OWNmZGZhMzJkMTIzNDhmMDkyYzEzNWQzMzU1MzQ1NDU6SGM4b0RDeGFUcHRnRlJZMUtLYlRUdnNDWklOckJPVlliS1ZldElZRA==',
+               'Host': 'login.eveonline.com'}
+    data = "grant_type=refresh_token&refresh_token={0}".format(refresh_token)
+
+    r = requests.post("https://login.eveonline.com/v2/oauth/token", data=data, headers=headers)
     access_token = r.json()['access_token']
+    ref_token = r.json()['refresh_token']
+    if ref_token != refresh_token:
+        parent = f"projects/bravebpc/secrets/refresh_token"
+        resp = client.add_secret_version(parent=parent, payload={'data': ref_token.encode('UTF-8')})
+        print(f'(udpatebpdata) Added secret version: {resp.name}')
 
     client = SwaggerClient.from_url('https://esi.evetech.net/latest/swagger.json')
     api = client.Corporation
@@ -111,34 +121,28 @@ def update_bp_data():
     api = client.Universe
 
     item_names = []
-    retry = True
-    count = 0
-    while retry and count < 10:
-        retry = False
-        try:
-            item_names = api.post_universe_names(ids=items[:750]).result()
-        except Exception as e:
-            print("Exception when calling UniverseApi->post_universe_names: %s\n" % e)
-            time.sleep(10)
-            retry = True
-            count += 1
-    if retry:
-        print("Failed to get item names")
-        return
-    retry = True
-    count = 0
-    while retry and count < 10:
-        retry = False
-        try:
-            item_names.extend(api.post_universe_names(ids=items[750:]).result())
-        except Exception as e:
-            print("Exception when calling UniverseApi->post_universe_names: %s\n" % e)
-            time.sleep(10)
-            retry = True
-            count += 1
-    if retry:
-        print("Failed to get item names")
-        return
+    start = 0
+    BLOCK_SIZE=750
+    temp = items[start:start+BLOCK_SIZE]
+
+    while len(temp) > 0:
+        retry = True
+        count = 0
+        while retry and count < 10:
+            retry = False
+            try:
+                item_names.extend(api.post_universe_names(ids=temp).result())
+            except Exception as e:
+                print("Exception when calling UniverseApi->post_universe_names: %s\n" % e)
+                time.sleep(10)
+                retry = True
+                count += 1
+        if retry:
+            print("Failed to get item names")
+            return
+        start += BLOCK_SIZE
+        temp = items[start:start+BLOCK_SIZE]
+
     names = {}
     for item in item_names:
         names[item["id"]] = item["name"]
@@ -214,19 +218,29 @@ def update_bp_data():
         json.dump(data, outfile, indent=4)
 
 def update_job_data():
-    headers = {'Content-Type': 'application/json',
-            'Authorization': 'Basic OWNmZGZhMzJkMTIzNDhmMDkyYzEzNWQzMzU1MzQ1NDU6SGM4b0RDeGFUcHRnRlJZMUtLYlRUdnNDWklOckJPVlliS1ZldElZRA=='}
-    payload = {'grant_type': 'refresh_token',
-            'refresh_token': os.environ.get('ADMIN_TOKEN')}
-    data = json.dumps(payload)
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/bravebpc/secrets/refresh_token/versions/latest"
+    response = client.access_secret_version(name=name)
+    refresh_token = response.payload.data.decode('UTF-8')
 
-    r = requests.post("https://login.eveonline.com/oauth/token", data=data, headers=headers)
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
+               'Authorization': 'Basic OWNmZGZhMzJkMTIzNDhmMDkyYzEzNWQzMzU1MzQ1NDU6SGM4b0RDeGFUcHRnRlJZMUtLYlRUdnNDWklOckJPVlliS1ZldElZRA==',
+               'Host': 'login.eveonline.com'}
+    data = "grant_type=refresh_token&refresh_token={0}".format(refresh_token)
+
+    r = requests.post("https://login.eveonline.com/v2/oauth/token", data=data, headers=headers)
+    ref_token = r.json()['refresh_token']
+    if ref_token != refresh_token:
+        parent = f"projects/bravebpc/secrets/refresh_token"
+        resp = client.add_secret_version(parent=parent, payload={'data': ref_token.encode('UTF-8')})
+        print(f'(udpatejobdata) Added secret version: {resp.name}')
 
     config = swagger_client.Configuration()
     config.access_token = r.json()['access_token']
+
     api = swagger_client.IndustryApi(swagger_client.ApiClient(config))
     api.api_client.set_default_header('User-Agent', 'industry-info')
-    api.api_client.host = "https://esi.tech.ccp.is"
+    api.api_client.host = "https://esi.evetech.net"
 
     job_data = {}
     retry = True
@@ -252,25 +266,27 @@ def update_job_data():
 
     api = swagger_client.UniverseApi(swagger_client.ApiClient(config))
     api.api_client.set_default_header('User-Agent', 'universe-info')
-    api.api_client.host = "https://esi.tech.ccp.is"
+    api.api_client.host = "https://esi.evetech.net"
 
     print(len(items))
     item_names = []
     # print(len(items))
     retry = True
     count = 0
-    while retry and count < 10:
-        retry = False
-        try:
-            item_names = api.post_universe_names(items)
-        except ApiException as e:
-            # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
-            time.sleep(10)
-            retry = True
-            count += 1
-    if retry:
-        # print("Failed to refresh BP data")
-        return
+
+    if items:
+        while retry and count < 10:
+            retry = False
+            try:
+                item_names = api.post_universe_names(items)
+            except ApiException as e:
+                # print("Exception when calling MarketApi->get_markets_structures_structure_id: %s\n" % e)
+                time.sleep(10)
+                retry = True
+                count += 1
+        if retry:
+            # print("Failed to refresh BP data")
+            return
     print(len(item_names))
     names = {}
     for item in item_names:

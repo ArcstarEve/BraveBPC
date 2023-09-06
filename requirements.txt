@@ -9,4 +9,5 @@ google-cloud-storage
 google-cloud-secret-manager
 mysqlclient
 google-cloud-datastore
+jsonschema<4.0
 bravado

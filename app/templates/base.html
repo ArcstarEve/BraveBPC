@@ -20,7 +20,7 @@
             <a href="{{ url_for('sales') }}">For Sale</a>&ensp;
             {% endif %}
             {% if current_user.is_anonymous %}
-            <a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://bravebpc.appspot.com/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData">Login</a>&ensp;
+            <a href="https://login.eveonline.com/v2/oauth/authorize?response_type=code&redirect_uri=http://bravebpc.appspot.com/callback&client_id=9cfdfa32d12348f092c135d335534545&scope=publicData&state=BraveBPC"><img src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-small.png" /></a>&ensp;
             <!--<a href="https://login.eveonline.com/oauth/authorize?response_type=code&redirect_uri=http://127.0.0.1:8080/callback&client_id=ee196406f9874a1b9d427e75020833fe&scope=publicData">Login</a>&ensp;-->
             {% else %}
             <a href="{{ url_for('logout') }}">Logout</a>&ensp;

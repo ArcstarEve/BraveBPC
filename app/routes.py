@@ -30,7 +30,7 @@ def index():
     if current_user.is_authenticated:
         api = swagger_client.CharacterApi()
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
-        api.api_client.host = "https://esi.tech.ccp.is"
+        api.api_client.host = "https://esi.evetech.net"
 
         response = api.get_characters_character_id(current_user.id)
 
@@ -78,7 +78,7 @@ def index():
                            form=form,
                            title='Home',
                            bpcs=bpc_data,
-                           allow_request=False,
+                           allow_request=allow_request,
                            is_brave_industries=is_brave_industries,
                            is_brave_collective=is_brave_collective)
 
@@ -93,7 +93,7 @@ def sales():
     if current_user.is_authenticated:
         api = swagger_client.CharacterApi()
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
-        api.api_client.host = "https://esi.tech.ccp.is"
+        api.api_client.host = "https://esi.evetech.net"
 
         response = api.get_characters_character_id(current_user.id)
 
@@ -205,7 +205,7 @@ def requests():
     if current_user.is_authenticated:
         api = swagger_client.CharacterApi()
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
-        api.api_client.host = "https://esi.tech.ccp.is"
+        api.api_client.host = "https://esi.evetech.net"
 
         response = api.get_characters_character_id(current_user.id)
 
@@ -274,7 +274,7 @@ def todo():
         is_brave_industries = False
         api = swagger_client.CharacterApi()
         api.api_client.set_default_header('User-Agent', 'brave-bpc')
-        api.api_client.host = "https://esi.tech.ccp.is"
+        api.api_client.host = "https://esi.evetech.net"
 
         response = api.get_characters_character_id(current_user.id)
 
@@ -291,8 +291,68 @@ def todo():
 
     ignore = ['Civilian Data Analyzer Blueprint',
               'Improved Frentix Booster Reaction Formula',
-              'Standard Frentix Booster Reaction Formula']
+              'Standard Frentix Booster Reaction Formula',
+              'Axosomatic Neurolink Enhancer Reaction Formula',
+              'C3-FTM Acid Reaction Formula',
+              'Caesarium Cadmide Reaction Formula',
+              'Carbon Fiber Reaction Formula',
+              'Carbon Polymers Reaction Formula',
+              'Carbon-86 Epoxy Resin Reaction Formula',
+              'Ceramic Powder Reaction Formula',
+              'Cogni-Emotive Neurolink Enhancer Reaction Formula',
+              'Crystalline Carbonide Reaction Formula',
+              'Crystallite Alloy Reaction Formula',
+              'Dysporite Reaction Formula',
+              'Fernite Alloy Reaction Formula',
+              'Fernite Carbide Reaction Formula',
+              'Ferrogel Reaction Formula',
+              'Fluxed Condensates Reaction Formula',
+              'Fullerene Intercalated Graphite Reaction Formula',
+              'Fulleroferrocene Reaction Formula',
+              'Goal-Orienting Neurolink Stabilizer Reaction Formula',
+              'Graphene Nanoribbons Reaction Formula',
+              'Hexite Reaction Formula',
+              'Hypnagogic Neurolink Enhancer Reaction Formula',
+              'Isotropic Neofullerene Alpha-3 Reaction Formula',
+              'Isotropic Neofullerene Beta-6 Reaction Formula',
+              'Isotropic Neofullerene Gamma-9 Reaction Formula',
+              'Lanthanum Metallofullerene Reaction Formula',
+              'Methanofullerene Reaction Formula',
+              'Neo Mercurite Reaction Formula',
+              'Nonlinear Metamaterials Reaction Formula',
+              'Oxy-Organic Solvents Reaction Formula',
+              'PPD Fullerene Fibers Reaction Formula',
+              'Phenolic Composites Reaction Formula',
+              'Plasmonic Metamaterials Reaction Formula',
+              'Pressurized Oxidizers Reaction Formula',
+              'Prometium Reaction Formula',
+              'Reinforced Carbon Fiber Reaction Formula',
+              'Rolled Tungsten Alloy Reaction Formula',
+              'Scandium Metallofullerene Reaction Formula',
+              'Silicon Diborite Reaction Formula',
+              'Solerium Reaction Formula',
+              'Stress-Responding Neurolink Stabilizer Reaction Formula',
+              'Sylramic Fibers Reaction Formula',
+              'Synth Crash Booster Reaction Formula',
+              'Terahertz Metamaterials Reaction Formula',
+              'Thermosetting Polymer Reaction Formula',
+              'Thulium Hafnite Reaction Formula',
+              'Titanium Carbide Reaction Formula',
+              'Ultradian-Cycling Neurolink Stabilizer Reaction Formula',
+              'Unrefined Dysporite Reaction Formula',
+              'Unrefined Ferrofluid Reaction Formula',
+              'Unrefined Fluxed Condensates Reaction Formula',
+              'Unrefined Hexite Reaction Formula',
+              'Unrefined Hyperflurite Reaction Formula',
+              'Unrefined Neo Mercurite Reaction Formula',
+              'Unrefined Promethium Mercurite Reaction Formula',
+              'Unrefined Prometium Reaction Formula',
+              'Unrefined Solerium Reaction Formula',
+              'Unrefined Titanium Chromide Reaction Formula',
+              'Unrefined Vanadium Hafnite Reaction Formula',
+              'Vanadium Hafnite Reaction Formula']
     adjust = ['Ansiblex Jump Gate Blueprint',
+              'Apocalypse Blueprint',
               'Apostle Blueprint',
               'Athanor Blueprint',
               'Chimera Blueprint',
@@ -301,8 +361,12 @@ def todo():
               'Heavy J5b Enduring Warp Scrambler Blueprint',
               'Heavy Warp Scrambler I Blueprint',
               'Ion Siege Blaster I Blueprint',
+              'Lif Blueprint',
+              'Nidhoggur Blueprint',
               'Pharolux Cyno Beacon Blueprint',
               'Rapid Torpedo Launcher I Blueprint',
+              'Standup Einherji I Blueprint',
+              'Standup Equite I Blueprint',
               'Standup Guided Bomb Launcher I Blueprint',
               'Standup M-Set Biochemical Reactor Time Efficiency I Blueprint',
               'Structure Acceleration Coils Blueprint',
@@ -321,6 +385,7 @@ def todo():
               'Structure Storage Bay Blueprint',
               'Tenebrex Cyno Jammer Blueprint',
               'Territorial Claim Unit Blueprint',
+              'Thanatos Blueprint',
               'Triple Neutron Blaster Cannon I Blueprint']
 
     with open('{0}bps2.json'.format(app.config['ROOT_PATH'])) as json_file:
@@ -394,21 +459,28 @@ def todo():
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
-    url = "https://login.eveonline.com/oauth/token"
-    payload = {"grant_type": "authorization_code",
-               "code": code}
-    data = json.dumps(payload)
-    headers = {'Content-Type': 'application/json',
-               'Authorization': 'Basic ' + app.config['DEV_AUTH_KEY']}
+    url = "https://login.eveonline.com/v2/oauth/token"
+    # payload = {"grant_type": "authorization_code",
+    #            "code": code}
+    # data = json.dumps(payload)
+    data = "grant_type=authorization_code&code={0}".format(code)
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
+               'Authorization': 'Basic ' + app.config['DEV_AUTH_KEY'],
+               'Host': 'login.eveonline.com'}
 
     r = req.post(url, data=data, headers=headers)
+
+    print(r)
+
     raw = r.json()
+
+    print(raw)
 
     access_token = raw['access_token']
     refresh_token = raw['refresh_token']
 
     url = "https://login.eveonline.com/oauth/verify"
-    headers = {'Content-Type': 'application/json',
+    headers = {'Content-Type': 'application/x-www-form-urlencoded',
                'Authorization': 'Bearer {0}'.format(str(access_token))}
 
     r2 = req.get(url, headers=headers)
@@ -428,7 +500,7 @@ def callback():
                       'user_id': char_id,
                       'refresh_token': refresh_token})
         client.put(entry)
-    
+
     login_user(user, remember=True)
 
     return redirect(url_for('index'))
